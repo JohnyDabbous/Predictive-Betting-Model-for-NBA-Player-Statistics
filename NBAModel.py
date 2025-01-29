@@ -124,8 +124,8 @@ try:
                     continue
         y = np.array(playerRebs)
 
-
-    X = np.array([1, 2, 3, 4, 5])
+    # this needs to be a static array because of their only being 5 possible data points
+    X = np.array([5, 4, 3, 2, 1])
 
     # training and testing data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=1, random_state=5)
@@ -153,7 +153,7 @@ try:
     plt.close('Figure 1')
 
     # getting a predicted estimate
-    parlayNum = lr.predict([[6]])
+    parlayNum = lr.predict([[5]])
     print(parlayNum)
     if (parlayNum <= overUnder):
         print(f"My training data suggests that you go under on {overUnder}.")
