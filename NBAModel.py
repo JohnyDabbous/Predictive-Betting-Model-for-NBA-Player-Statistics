@@ -1,6 +1,5 @@
-import pandas as pd 
-import random
 import numpy as np
+import mysql.connector
 import requests
 from bs4 import BeautifulSoup as bs
 from sklearn.linear_model import LinearRegression
@@ -16,25 +15,28 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-# from webdriver_manager.chrome import ChromeDriverManager
 
 print("""
-Welcome to Parlay Guesser for over or under. This is a basic machine learning model that helps users determine over
-or under bets on certain stats. The data collected to make this possible was collected from NBA.com.
-Make sure to enter the player's first name(SPELLING MATTERS) and their team(AGAIN 
-SPELLING MATTERS), and the algorithm will do the rest to determine whether or not you should go over or under. 
+Parlay Guesser for over or under. This is a basic machine learning model that helps users determine over
+or under bets on certain stats.  
 """)
 
-# initializing array data
-playerPts, playerAsts, playerRebs = [], [], []
+# initializing array data for machine learning model
+playerPts, playerAsts, playerRebs, X = [], [], [], []
+
 try:
+    db = mysql.connector.connect(host='localhost', user='root', passwd='Tonyjohny2', database='test')
+    mycursor = db.cursor()
     #getting user input
     player = input("Enter the name of the player: ")
     team = input("Enter the name of the team your player plays for: ")
-    stat = input("Which stat are you going to bet on: Points, Rebounds, or Assists: ")
+    stat = input("Which stat are you going to bet on: Points, Rebounds, or Assists: ").strip()
     overUnder = float(input("Enter the number to go over or under on: "))
 
-
+    # done to reset the data into the most recently scraped data
+    mycursor.execute(f'DROP TABLE {player}')
+    # creates the player's data table
+    mycursor.execute(f"CREATE TABLE {player} (gameNum int, points int, rebounds int, assists int)")
     # adds the chromedriver extension which has to be in the same location as the file using the object
     service = Service(executable_path='chromedriver.exe')
 
@@ -68,7 +70,7 @@ try:
     # just to ensure no lag
     time.sleep(5)
     '''
-    problem arises with the scrollview I need to fix later
+    problem arises with the scroll view I need to fix later
     '''
     for i in range(len(playerLinks)):
         if playerLinks[i].text == player:
@@ -83,58 +85,73 @@ try:
 
     # closing the driver
     driver.close()
-
+    gameTracker = 0
     # beautiful soup and requests web scraping
     infoParser = bs(htmlParser.text, 'html.parser')
     infoParser.find('table')
-
     # algorithm for scraping the points
-    if stat == 'Points':
-        for i in infoParser.find_all('tr'):
-            pts = i.find_all('td')
-            for t in range(len(pts)):
-                if t == 4:
-                    playerPts.append(int(pts[t].text))
-                    break
-                else:
-                    continue
-        y = np.array(playerPts)
+    for i in infoParser.find_all('tr'):
+        statHolder = []
+        stats = i.find_all('td')
+        for t in range(len(stats)):
+            if t == 4:
+                # holding var for points
+                # pointHolder = int(stat[t].text)
+                statHolder.append(int(stats[t].text))
+            if t == 17:
+                # holding var for assists
+                # astHolder = int(stat[t].text)
+                statHolder.append(int(stats[t].text))
+            if t == 16:
+                # holding var for rebounds
+                # rebHolder = int(stat[t].text)
+                statHolder.append(int(stats[t].text))
 
-    # algorithm for scraping assists
-    if stat == 'Assists':
-        for i in infoParser.find_all('tr'):
-            pts = i.find_all('td')
-            for t in range(len(pts)):
-                if t == 17:
-                    playerAsts.append(int(pts[t].text))
-                    break
-                else:
-                    continue
-        y = np.array(playerAsts)
+        # done because the first array is always null
+        if not statHolder:
+            continue
+        else:
+            mycursor.execute(f'INSERT INTO {player} (gameNum, points, rebounds, assists) VALUES (%s, %s, %s, %s)', (5 - gameTracker, statHolder[0], statHolder[1], statHolder[2]))
+            gameTracker += 1
+    db.commit()
 
-    # algorithm for scraping rebounds
-    if stat == 'Rebounds':
-        for i in infoParser.find_all('tr'):
-            pts = i.find_all('td')
-            for t in range(len(pts)):
-                if t == 16:
-                    playerRebs.append(int(pts[t].text))
-                    break
-                else:
-                    continue
-        y = np.array(playerRebs)
+    # getting the point data from the player
+    mycursor.execute(f'SELECT points FROM {player}')
+    for i in mycursor:
+        playerPts.append(i[0])
 
-    # this needs to be a static array because of their only being 5 possible data points
-    X = np.array([5, 4, 3, 2, 1])
+    # getting the assist data from the player
+    mycursor.execute(f'SELECT assists FROM {player}')
+    for i in mycursor:
+        playerAsts.append(i[0])
+
+    # getting the assist data from the player
+    mycursor.execute(f'SELECT rebounds FROM {player}')
+    for i in mycursor:
+        playerRebs.append(i[0])
+
+    # a check to see what the dependent variable is
+    if stat == "Points":
+        y = playerPts
+
+    if stat == "Rebounds":
+        y = playerRebs
+
+    if stat == "Assists":
+        y = playerAsts
+
+    # getting gameNum data from database
+    mycursor.execute(f'SELECT gameNum FROM {player}')
+    for i in mycursor:
+        X.append(i[0])
 
     # training and testing data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=1, random_state=5)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
 
     # makes the array into 2D for the inputs because the inputs require to be 2D
     # something is wrong with X_train as it loses a value for some reason
     X_train = np.array(X_train).reshape(-1, 1)
-
-    # X_test = np.array(X_test).reshape(-1,1)
+    X_test = np.array(X_test).reshape(-1, 1)
 
     # create linear regression object
     lr = LinearRegression()
@@ -153,7 +170,7 @@ try:
     plt.close('Figure 1')
 
     # getting a predicted estimate
-    parlayNum = lr.predict([[5]])
+    parlayNum = lr.predict([[6]])
     print(parlayNum)
     if (parlayNum <= overUnder):
         print(f"My training data suggests that you go under on {overUnder}.")
