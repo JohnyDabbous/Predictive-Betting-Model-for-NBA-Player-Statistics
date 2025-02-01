@@ -28,7 +28,7 @@ playerPts, playerAsts, playerRebs, gameNum, X = [], [], [], [], []
 try:
     db = mysql.connector.connect(host='localhost', user='root', passwd='Tonyjohny2', database='test')
     mycursor = db.cursor()
-    #getting user input
+    # getting user input
     player = input("Enter the name of the player: ")
     stat = input("Which stat are you going to bet on: Points, Rebounds, or Assists: ").strip()
     overUnder = float(input("Enter the number to go over or under on: "))
@@ -42,7 +42,7 @@ try:
     # gets the driver object which allows you to surf the web
     driver = webdriver.Chrome(service=service)
 
-    #gets navigation link
+    # gets navigation link
     driver.get('https://www.basketball-reference.com/players/')
 
     # paste here
@@ -66,7 +66,7 @@ try:
         statHolder = []
         playerst = i.find_all('td')
         for t in range(len(playerst)):
-            #getting game number
+            # getting game number
             if t == 0:
                 if playerst[t].text == '':
                     continue
@@ -120,17 +120,14 @@ try:
         X.append(i[0])
 
     # training and testing data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=13)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=13)
 
     # makes the array into 2D for the inputs because the inputs require to be 2D
     # something is wrong with X_train as it loses a value for some reason
     X_train = np.array(X_train).reshape(-1, 1)
     X_test = np.array(X_test).reshape(-1, 1)
-
     # create linear regression object
     lr = LinearRegression()
-
-
     lr.fit(X_train, y_train)
 
     # lr can start predicting output values given an input
@@ -138,18 +135,17 @@ try:
     X_train = X_train.flatten()
     plt.xlabel("Game Number")
     plt.ylabel(f"{stat}")
-    plt.scatter(X_train, y_train, color='black')
+    plt.scatter(X_train, y_train, label='Training', color='black')
     plt.plot(X_train, y_predict, color='b')
+    plt.legend()
     plt.show()
-    plt.close('Figure 1')
-
     # getting a predicted estimate
     parlayNum = lr.predict([[X[-1] + 1]])
-    # print(lr.score(X_train, y_train))
+    print(lr.score(X_train.reshape(-1,1), y_train))
     if (parlayNum <= overUnder):
         print(f"My training data suggests that you go under on {overUnder} given your over/under of {parlayNum}.")
 
     else:
         print(f"My training data suggests you go over on {overUnder} given your over/under of {parlayNum}.")
 except:
-    print("We were unable to complete the process, maybe one of your inputs was misspelled.")
+    print("The stat line could not be predicted. Check your inputs.")
