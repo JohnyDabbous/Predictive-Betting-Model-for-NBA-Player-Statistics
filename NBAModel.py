@@ -24,9 +24,8 @@ or under bets on certain stats.
 
 # initializing array data for machine learning model
 playerPts, playerAsts, playerRebs, gameNum, X = [], [], [], [], []
-
 try:
-    db = mysql.connector.connect(host='localhost', user='root', passwd='Tonyjohny2', database='test')
+    db = mysql.connector.connect(host='localhost', user='root', password='Tonyjohny2', database='Players')
     mycursor = db.cursor()
     # getting user input
     player = input("Enter the name of the player: ")
@@ -37,14 +36,11 @@ try:
     # creates the player's data table
     mycursor.execute(f"CREATE TABLE {player.split()[0].lower()} (gameNum int, points int, rebounds int, assists int)")
     # adds the chromedriver extension which has to be in the same location as the file using the object
-    service = Service(executable_path='chromedriver.exe')
-
+    service = Service(executable_path='/Users/johnydabbous/Desktop/Predictive-Betting-Model-for-NBA-Player-Statistics/chromedriver')
     # gets the driver object which allows you to surf the web
-    driver = webdriver.Chrome(service=service)
-
+    driver = webdriver.Chrome()
     # gets navigation link
     driver.get('https://www.basketball-reference.com/players/')
-
     # paste here
     playerLetter = driver.find_element(By.LINK_TEXT, list(player.split()[1])[0])
     playerLetter.click()
@@ -120,6 +116,8 @@ try:
         X.append(i[0])
 
     # training and testing data
+    # Assigns X_train to 80% of randomly selected points of data
+    # Assigns X_test to the remaining 20% of the data points
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=13)
 
     # makes the array into 2D for the inputs because the inputs require to be 2D
@@ -135,13 +133,14 @@ try:
     X_train = X_train.flatten()
     plt.xlabel("Game Number")
     plt.ylabel(f"{stat}")
-    plt.scatter(X_train, y_train, label='Training', color='black')
-    plt.plot(X_train, y_predict, color='b')
+    plt.scatter(X_train, y_train, label='Training Data', color='black')
+    plt.plot(X_train, y_predict, color='b', label='Linear Relation')
+    plt.scatter(X_test, y_test, color='r', label='Testing Data')
     plt.legend()
     plt.show()
     # getting a predicted estimate
     parlayNum = lr.predict([[X[-1] + 1]])
-    print(lr.score(X_train.reshape(-1,1), y_train))
+    print(lr.score(X_test.reshape(-1,1), y_test))
     if (parlayNum <= overUnder):
         print(f"My training data suggests that you go under on {overUnder} given your over/under of {parlayNum}.")
 
@@ -149,3 +148,7 @@ try:
         print(f"My training data suggests you go over on {overUnder} given your over/under of {parlayNum}.")
 except:
     print("The stat line could not be predicted. Check your inputs.")
+
+
+
+# currently trying to implement a decision trees regression model

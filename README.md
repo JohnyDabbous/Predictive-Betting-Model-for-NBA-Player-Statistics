@@ -6,4 +6,8 @@ Requirements:
     - Make sure mysql is configured on system as well
 
 Adjustments:
-    - Database is locally hosted so make sure you have your version of mysql version connector details to run on system
+    - Database is locally hosted -- code needs to be adjusted to fit local configuration
+
+Running the Script:
+    - Spelling matters for player names
+    - As well as capitalizations
