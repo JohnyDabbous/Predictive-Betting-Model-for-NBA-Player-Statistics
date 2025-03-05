@@ -1,6 +1,8 @@
 import numpy as np
 import mysql.connector
 import requests
+import os
+from dotenv import load_dotenv
 from bs4 import BeautifulSoup as bs
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
@@ -21,11 +23,13 @@ print("""
 Parlay Guesser for over or under on NBA players. This is a basic machine learning model that helps determine over
 or under bets on certain stats.  
 """)
-
+load_dotenv()
+passwordEnv = os.getenv("PASSWORD")
+databaseEnv = os.getenv("DATABASE")
 # initializing array data for machine learning model
 playerPts, playerAsts, playerRebs, gameNum, X = [], [], [], [], []
 try:
-    db = mysql.connector.connect(host='localhost', user='root', password='Tonyjohny2', database='Players')
+    db = mysql.connector.connect(host='localhost', user='root', password=passwordEnv, database=databaseEnv)
     mycursor = db.cursor()
     # getting user input
     player = input("Enter the name of the player: ")
@@ -148,7 +152,5 @@ try:
         print(f"My training data suggests you go over on {overUnder} given your over/under of {parlayNum}.")
 except:
     print("The stat line could not be predicted. Check your inputs.")
-
-
 
 # currently trying to implement a decision trees regression model
