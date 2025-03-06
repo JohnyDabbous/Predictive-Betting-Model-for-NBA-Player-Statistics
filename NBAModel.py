@@ -105,15 +105,14 @@ try:
     for i in mycursor:
         playerRebs.append(i[0])
 
-    # a check to see what the dependent variable is
-    if stat == "Points":
-        y = playerPts
-
-    if stat == "Rebounds":
-        y = playerRebs
-
-    if stat == "Assists":
-        y = playerAsts
+    # assigning y to some array data 
+    match stat:
+        case "Points":
+            y = playerPts
+        case "Rebounds":
+            y = playerRebs
+        case "Assists":
+            y = playerAsts
     # getting gameNum data from database
     mycursor.execute(f'SELECT gameNum FROM {player.split()[0].lower()}')
     for i in mycursor:
