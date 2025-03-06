@@ -35,7 +35,7 @@ try:
     player = input("Enter the name of the player: ")
     stat = input("Which stat are you going to bet on: Points, Rebounds, or Assists: ").strip()
     overUnder = float(input("Enter the number to go over or under on: "))
-    # done to reset the data into the most recently scraped data
+    # dynamically resets all the data in the table 
     mycursor.execute(f'DROP TABLE IF EXISTS {player.split()[0].lower()}')
     # creates the player's data table
     mycursor.execute(f"CREATE TABLE {player.split()[0].lower()} (gameNum int, points int, rebounds int, assists int)")
@@ -122,7 +122,7 @@ try:
     # training and testing data
     # Assigns X_train to 80% of randomly selected points of data
     # Assigns X_test to the remaining 20% of the data points
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=13)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=13)
 
     # makes the array into 2D for the inputs because the inputs require to be 2D
     # something is wrong with X_train as it loses a value for some reason
@@ -154,3 +154,4 @@ except:
     print("The stat line could not be predicted. Check your inputs.")
 
 # currently trying to implement a decision trees regression model
+# doing some more bug and efficiency fixes
