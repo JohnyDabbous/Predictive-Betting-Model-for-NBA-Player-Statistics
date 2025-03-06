@@ -154,5 +154,3 @@ except:
     print("The stat line could not be predicted. Check your inputs.")
 
 # currently trying to implement a decision trees regression model
-# doing some more bug and efficiency fixes
-# Johny Dabbous
