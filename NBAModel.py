@@ -58,50 +58,22 @@ htmlParser = requests.get(driver.current_url)
 
 # closing the driver
 driver.close()
-gameTracker = 0
 # beautiful soup and requests web scraping
 infoParser = bs(htmlParser.text, 'html.parser')
 tables = infoParser.find('table', {'class': 'stats_table sortable row_summable soc'})
 for x in tables.find_all('tr'):
     holder2 = x.text
-    holder = str(x.text).split()
+    holder = str(x.text).split(" ")
     if 'Rk' in holder or 'Inactive' in holder or "Dress" in holder or 'Not' in holder:
         continue
     else:
         if '(OT)' in holder:
             holder.remove('(OT)')
-        if '@' in holder:
-            holder.remove('@')
-        # print(holder, len(holder))
-        print(str(holder2))
+        # done to get rid of the redundant last row
+        if holder[2] == '':
+            continue
     
-table = infoParser.find('table', {'class': 'row_summable sortable stats_table'})
-for i in table.find_all('tr'):
-    statHolder = []
-    playerst = i.find_all('td')
-    for t in range(len(playerst)):
-        # getting game number
-        if t == 0:
-            if playerst[t].text == '':
-                continue
-            else:
-                statHolder.append(int(playerst[t].text))
-        # getting rebounds
-        if t == 20:
-            statHolder.append(int(playerst[t].text))
-        # getting assists
-        if t == 21:
-            statHolder.append(int(playerst[t].text))
-        # getting points
-        if t == 26:
-            statHolder.append(int(playerst[t].text))
-
-    # done because the first array is always null
-    if not statHolder:
-        continue
-    else:
-        mycursor.execute(f'INSERT INTO {player.split()[0].lower()} (gameNum, points, rebounds, assists) VALUES (%s, %s, %s, %s)', (statHolder[0], statHolder[3], statHolder[1], statHolder[2]))
-        gameTracker += 1
+    mycursor.execute(f'INSERT INTO {player.split()[0].lower()} (gameNum, points, rebounds, assists) VALUES (%s, %s, %s, %s)', (float(holder[1]), float(holder[33]), float(holder[27]), float(holder[28])))
 db.commit()
 
 # getting the point data from the player
