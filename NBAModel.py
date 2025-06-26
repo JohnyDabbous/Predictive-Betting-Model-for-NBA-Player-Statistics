@@ -27,18 +27,18 @@ load_dotenv()
 passwordEnv = os.getenv("PASSWORD")
 databaseEnv = os.getenv("DATABASE")
 # initializing array data for machine learning model
-playerPts, playerAsts, playerRebs, gameNum, X = [], [], [], [], []
+playerPts, playerAsts, playerRebs, PR, PA, RA, PRA, gameNum, X = [], [], [], [], [], [], [], [], []
 try:
     db = mysql.connector.connect(host='localhost', user='root', password=passwordEnv, database=databaseEnv)
     mycursor = db.cursor()
     # getting user input
     player = input("Enter the name of the player: ")
-    stat = input("Which stat are you going to bet on: Points, Rebounds, or Assists: ").strip()
+    stat = input("Which stat are you going to bet on: Points, Rebounds, Assists, Points and Rebounds(PR), Points and Assists(PA), Rebounds and Assists(RA), Points, Rebounds, and Assists(PRA): ").strip()
     overUnder = float(input("Enter the number to go over or under on: "))
     # dynamically resets all the data in the table 
     mycursor.execute(f'DROP TABLE IF EXISTS {player.split()[0].lower()}')
     # creates the player's data table
-    mycursor.execute(f"CREATE TABLE {player.split()[0].lower()} (gameNum int, points int, rebounds int, assists int)")
+    mycursor.execute(f"CREATE TABLE {player.split()[0].lower()} (gameNum int, points int, rebounds int, assists int, pr int, pa int, ra int, pra int)")
     # adds the chromedriver extension which has to be in the same location as the file using the object
     service = Service(executable_path='/Users/johnydabbous/Desktop/Predictive-Betting-Model-for-NBA-Player-Statistics/chromedriver')
     # gets the driver object which allows you to surf the web
@@ -62,7 +62,6 @@ try:
     infoParser = bs(htmlParser.text, 'html.parser')
     tables = infoParser.find('table', {'class': 'stats_table sortable row_summable soc'})
     for x in tables.find_all('tr'):
-        holder2 = x.text
         holder = str(x.text).split(" ")
         if 'Rk' in holder or 'Inactive' in holder or "Dress" in holder or 'Not' in holder:
             continue
@@ -73,7 +72,7 @@ try:
             if holder[2] == '':
                 continue
         
-        mycursor.execute(f'INSERT INTO {player.split()[0].lower()} (gameNum, points, rebounds, assists) VALUES (%s, %s, %s, %s)', (float(holder[1]), float(holder[33]), float(holder[27]), float(holder[28])))
+        mycursor.execute(f'INSERT INTO {player.split()[0].lower()} (gameNum, points, rebounds, assists, pr, pa, ra, pra) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)', (float(holder[1]), float(holder[33]), float(holder[27]), float(holder[28]), float(holder[33]) + float(holder[27]), float(holder[33]) + float(holder[28]), float(holder[27]) + float(holder[28]), float(holder[33]) + float(holder[27]) + float(holder[28])))
     db.commit()
 
     # getting the point data from the player
@@ -91,6 +90,26 @@ try:
     for i in mycursor:
         playerRebs.append(i[0])
 
+    # getting the points and rebounds data from the player
+    mycursor.execute(f'SELECT pr FROM {player.split()[0].lower()}')
+    for i in mycursor:
+        PR.append(i[0])
+
+    # getting the points and assists data from the player
+    mycursor.execute(f'SELECT pa FROM {player.split()[0].lower()}')
+    for i in mycursor:
+        PA.append(i[0])
+
+    # getting the rebounds and assists data from the player
+    mycursor.execute(f'SELECT ra FROM {player.split()[0].lower()}')
+    for i in mycursor:
+        RA.append(i[0])
+
+    # getting the points, rebounds, and assists data from the player
+    mycursor.execute(f'SELECT pra FROM {player.split()[0].lower()}')
+    for i in mycursor:
+        PRA.append(i[0])
+
     # assigning y to some array data 
     match stat:
         case "Points":
@@ -99,6 +118,14 @@ try:
             y = playerRebs
         case "Assists":
             y = playerAsts
+        case "PR":
+            y = PR
+        case "PA":
+            y = PA
+        case "RA":
+            y = RA
+        case "PRA":
+            y = PRA
     # getting gameNum data from database
     mycursor.execute(f'SELECT gameNum FROM {player.split()[0].lower()}')
     for i in mycursor:
@@ -135,6 +162,7 @@ try:
 
     else:
         print(f"My training data suggests you go over on {overUnder} given your over/under of {parlayNum}.")
+        
 except:
     print("The stat line could not be predicted. Check your inputs.")
 
